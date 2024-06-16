@@ -183,103 +183,144 @@ namespace MsgTool
 
         public byte[] WriteMSG()
         {
+            // Initialize memory stream and binary writer
             using (var memoryStream = new MemoryStream())
             using (var writer = new BinaryWriter(memoryStream, Encoding.UTF8))
             {
                 // Header
-                writer.Write(Version);
+                writer.Write((uint)this.Version);
                 writer.Write(Encoding.ASCII.GetBytes("GMSG"));
-                writer.Write((long)16);
-                var entryCount = Entries.Count;
+                writer.Write((ulong)16);
+
+                int entryCount = this.Entries.Count;
                 writer.Write(entryCount);
-                var attributeCount = AttributeHeaders.Count;
+
+                int attributeCount = this.AttributeHeaders.Count;
                 writer.Write(attributeCount);
-                var langCount = Languages.Count;
+
+                int langCount = this.Languages.Count;
                 writer.Write(langCount);
-                writer.Write(new byte[8 - (writer.BaseStream.Position % 8)]); // pad to 8
+
+                writer.Write(new byte[8 - (memoryStream.Length % 8)]); // pad to 8 bytes
+
                 long dataOffsetPH = 0;
 
-                if (IsVersionEncrypt(Version))
+                if (IsVersionEncrypt(this.Version))
                 {
-                    dataOffsetPH = writer.BaseStream.Position;
+                    dataOffsetPH = memoryStream.Length;
                     writer.Write((long)-1);
                 }
 
-                long unknDataOffsetPH = writer.BaseStream.Position;
-                writer.Write((long)-1);
-                long langOffsetPH = writer.BaseStream.Position;
-                writer.Write((long)-1);
-                long attributeOffsetPH = writer.BaseStream.Position;
-                writer.Write((long)-1);
-                long attributeNameOffsetPH = writer.BaseStream.Position;
+                long unknDataOffsetPH = memoryStream.Length;
                 writer.Write((long)-1);
 
-                // entries headers' offset
+                long langOffsetPH = memoryStream.Length;
+                writer.Write((long)-1);
+
+                long attributeOffsetPH = memoryStream.Length;
+                writer.Write((long)-1);
+
+                long attributeNameOffsetPH = memoryStream.Length;
+                writer.Write((long)-1);
+
+                // Write entries headers' offset
                 List<long> entryOffsetsPH = new List<long>();
-                for (int i = 0; i < entryCount; i++)
+                foreach (var entry in this.Entries)
                 {
-                    entryOffsetsPH.Add(writer.BaseStream.Position);
+                    entryOffsetsPH.Add(memoryStream.Length);
                     writer.Write((long)-1);
                 }
 
+                // Update unknData offset
                 writer.Seek((int)unknDataOffsetPH, SeekOrigin.Begin);
-                writer.Write((ulong)writer.BaseStream.Position);
+                writer.Write((ulong)memoryStream.Length);
+
+                writer.Seek(0, SeekOrigin.End);
                 writer.Write((ulong)0); // unknData
 
+                File.WriteAllBytes("testings.bin", memoryStream.ToArray());
+
+                // Write languages
                 writer.Seek((int)langOffsetPH, SeekOrigin.Begin);
-                writer.Write((ulong)writer.BaseStream.Position);
-                foreach (var lang in Languages)
+                writer.Write((ulong)memoryStream.Length);
+
+                writer.Seek(0, SeekOrigin.End);
+                foreach (var lang in this.Languages)
                 {
                     writer.Write(lang);
                 }
 
-                writer.Write(new byte[8 - (writer.BaseStream.Position % 8)]); // pad to 8
 
+                File.WriteAllBytes("testings.bin", memoryStream.ToArray());
 
+                // writer.Write(new byte[8 - (memoryStream.Length % 8)]); // pad to 8 bytes
+
+                // Write attribute headers
                 writer.Seek((int)attributeOffsetPH, SeekOrigin.Begin);
-                foreach (var attributeHeader in AttributeHeaders)
+                writer.Write((ulong)memoryStream.Length);
+
+                writer.Seek(0, SeekOrigin.End);
+                foreach (var attributeHeader in this.AttributeHeaders)
                 {
-                    writer.Write((int) attributeHeader["valueType"]);
+                    writer.Write((int)attributeHeader["valueType"]);
                 }
 
-                writer.Write(new byte[8 - (writer.BaseStream.Position % 8)]); // pad to 8
 
+                File.WriteAllBytes("testings.bin", memoryStream.ToArray());
+
+                // writer.Write(new byte[8 - (memoryStream.Length % 8)]); // pad to 8 bytes
+
+                // Write attribute names offset
                 writer.Seek((int)attributeNameOffsetPH, SeekOrigin.Begin);
+                writer.Write((ulong)memoryStream.Length);
+
+                writer.Seek(0, SeekOrigin.End);
                 List<long> attributeNamesOffsetsPH = new List<long>();
-                foreach (var attributeHeader in AttributeHeaders)
+                foreach (var attributeHeader in this.AttributeHeaders)
                 {
-                    attributeNamesOffsetsPH.Add(writer.BaseStream.Position);
+                    attributeNamesOffsetsPH.Add(memoryStream.Length);
                     writer.Write((long)-1);
                 }
 
-                // info(entry head) of each entry
+                File.WriteAllBytes("testings.bin", memoryStream.ToArray());
 
-                foreach (var entry in Entries)
+                // Write info(entry head) of each entry
+                foreach (var entry in this.Entries)
                 {
-                    writer.BaseStream.Seek(entryOffsetsPH[Entries.IndexOf(entry)], SeekOrigin.Begin);
+                    writer.BaseStream.Seek(entryOffsetsPH[this.Entries.IndexOf(entry)], SeekOrigin.Begin);
+                    writer.Write((ulong)memoryStream.Length);
+
+                    writer.Seek(0, SeekOrigin.End);
                     entry.WriteHead(writer);
                 }
 
-                // attributes of each entry
-                foreach (var entry in Entries)
+                // Write attributes of each entry
+                foreach (var entry in this.Entries)
                 {
-                    writer.BaseStream.Seek(entry.AttributeOffset, SeekOrigin.Begin);
-                    entry.WriteAttributes(writer, AttributeHeaders);
+                    writer.BaseStream.Seek(entry.AttributeOffsetPH, SeekOrigin.Begin);
+                    writer.Write((ulong)memoryStream.Length);
+
+                    entry.WriteAttributes(writer, this.AttributeHeaders);
                 }
 
-                // read / decrypt string pool
-                long dataOffset = writer.BaseStream.Position;
-                if (IsVersionEncrypt(Version))
+                // Read / decrypt string pool
+                long dataOffset = memoryStream.Length;
+                if (IsVersionEncrypt(this.Version))
                 {
                     writer.Seek((int)dataOffsetPH, SeekOrigin.Begin);
-                    writer.Write((ulong)writer.BaseStream.Position);
+                    writer.Write((ulong)memoryStream.Length);
                 }
+
+                writer.Seek(0, SeekOrigin.End);
+
+                File.WriteAllBytes("testings.bin", memoryStream.ToArray());
 
                 // Construct string pool
                 var stringPoolSet = new HashSet<string>();
                 var isStrAttrIdx = new List<int>();
                 var isNullAttrIdx = new List<int>();
 
+                var i = 0;
                 foreach (var attributeHeader in AttributeHeaders)
                 {
                     if ((int)attributeHeader["valueType"] == -1)
@@ -293,11 +334,17 @@ namespace MsgTool
                     }
                 }
 
-                foreach (var entry in Entries)
+                foreach (var attributeHeader in AttributeHeaders)
+                {
+                    string name = attributeHeader["name"].ToString(); // Assuming "name" is stored as a string in the dictionary
+                    stringPoolSet.Add(name);
+                }
+
+                foreach (var entry in this.Entries)
                 {
                     stringPoolSet.Add(entry.Name);
 
-                    foreach (var lang in Languages)
+                    foreach (var lang in this.Languages)
                     {
                         stringPoolSet.Add(entry.Langs[lang]);
                     }
@@ -312,10 +359,10 @@ namespace MsgTool
                 var wcharPool = new List<byte>();
                 foreach (var str in strOffsetDict.Keys)
                 {
-                    wcharPool.AddRange(Encoding.Unicode.GetBytes(str));
+                    wcharPool.AddRange(Helper.ToWcharBytes(str));
                 }
 
-                if (IsVersionEncrypt(Version))
+                if (IsVersionEncrypt(this.Version))
                 {
                     writer.Write(Helper.Encrypt(wcharPool.ToArray()));
                 }
@@ -324,43 +371,45 @@ namespace MsgTool
                     writer.Write(wcharPool.ToArray());
                 }
 
-                foreach (var attributeHeader in AttributeHeaders)
+                // Update string offsets
+                foreach (var attributeHeader in this.AttributeHeaders)
                 {
-                    writer.BaseStream.Seek(attributeNamesOffsetsPH[AttributeHeaders.IndexOf(attributeHeader)], SeekOrigin.Begin);
-                    writer.Write(strOffsetDict[attributeHeader["name"].ToString()] + dataOffset);
+                    writer.BaseStream.Seek(attributeNamesOffsetsPH[this.AttributeHeaders.IndexOf(attributeHeader)], SeekOrigin.Begin);
+                    writer.Write((ulong)(strOffsetDict[attributeHeader["name"].ToString()] + dataOffset));
                 }
 
-                foreach (var entry in Entries)
+                foreach (var entry in this.Entries)
                 {
                     long offset = entry.EntryNameOffsetPH;
                     writer.Seek((int)offset, SeekOrigin.Begin);
-                    writer.Write(strOffsetDict[entry.Name] + dataOffset);
+                    writer.Write((ulong)(strOffsetDict[entry.Name] + dataOffset));
 
-                    foreach (var lang in Languages)
+                    foreach (var lang in this.Languages)
                     {
                         offset = entry.ContentOffsetsByLangsPH[lang];
                         writer.Seek((int)offset, SeekOrigin.Begin);
-                        writer.Write(strOffsetDict[entry.Langs[lang]] + dataOffset);
+                        writer.Write((ulong)(strOffsetDict[entry.Langs[lang]] + dataOffset));
                     }
 
                     foreach (var idx in isStrAttrIdx)
                     {
                         offset = entry.AttributesPH[idx];
                         writer.Seek((int)offset, SeekOrigin.Begin);
-                        writer.Write(strOffsetDict[entry.Attributes[idx].ToString()] + dataOffset);
+                        writer.Write((ulong)(strOffsetDict[entry.Attributes[idx].ToString()] + dataOffset));
                     }
 
                     foreach (var idx in isNullAttrIdx)
                     {
                         offset = entry.AttributesPH[idx];
                         writer.Seek((int)offset, SeekOrigin.Begin);
-                        writer.Write(strOffsetDict[""] + dataOffset);
+                        writer.Write((ulong)(strOffsetDict[""] + dataOffset));
                     }
                 }
 
                 return memoryStream.ToArray();
             }
         }
+
 
         private void PadAlignUp(BinaryReader reader, int alignment)
         {

@@ -2,8 +2,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Unicode;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MsgTool
@@ -132,7 +130,7 @@ namespace MsgTool
             }
         }
 
-    public static MSG ImportJson(MSG msgObj, string filename)
+        public static MSG ImportJson(MSG msgObj, string filename)
         {
             // Read JSON file content
             string jsonString = File.ReadAllText(filename);
@@ -149,51 +147,74 @@ namespace MsgTool
                 Entries = new List<MsgEntry>()
             };
 
-            if (mhriceJson["entries"] is JArray entriesArray && entriesArray.Count > 0)
+            // Check if "entries" exists and is not null
+            if (mhriceJson["entries"] != null && mhriceJson["entries"].Count() > 0)
             {
-                msg.Languages = new List<int>(entriesArray[0]["content"].Count());
+                // Check if "content" exists and is not null
+                if (mhriceJson["entries"][0]["content"] != null)
+                {
+                    msg.Languages = Enumerable.Range(0, mhriceJson["entries"][0]["content"].Count()).ToList();
+                }
             }
             else
             {
-                // Set default languages if entries are empty
-                msg.Languages = new List<int> { 0 }; // Modify based on default logic
+                // Check if the version exists in VERSION_2_LANG_COUNT
+                if (Constants.VERSION_2_LANG_COUNT.ContainsKey(msg.Version))
+                {
+                    msg.Languages = Enumerable.Range(0, Constants.VERSION_2_LANG_COUNT[msg.Version]).ToList();
+                }
             }
 
             // Replace Attribute Headers
-            foreach (var head in mhriceJson["attribute_headers"])
+            if (mhriceJson["attribute_headers"] != null)
             {
-                msg.AttributeHeaders.Add(new Dictionary<string, object>
+                foreach (var head in mhriceJson["attribute_headers"])
+                {
+                    msg.AttributeHeaders.Add(new Dictionary<string, object>
             {
                 { "valueType", (int)head["ty"] },
                 { "name", (string)head["name"] }
             });
+                }
             }
 
             // Process entries
-            foreach (var jEntry in mhriceJson["entries"])
+            if (mhriceJson["entries"] != null)
             {
-                var entry = new MsgEntry
+                foreach (var jEntry in mhriceJson["entries"])
                 {
-                    GUID = (Guid)jEntry["guid"],
-                    CRC = (uint)jEntry["crc?"],
-                    Name = (string)jEntry["name"],
-                    Attributes = new List<object>(),
-                    Langs = new List<string>(),
-                    Hash = (MSG.IsVersionEntryByHash(msg.Version) ? (int)MMH3.Hash32((string)jEntry["name"]) : (int?) null),
-                    Index = (MSG.IsVersionEntryByHash(msg.Version) ? (int?)null : jEntry["index"]?.ToObject<int>())
-                };
+                    var entry = new MsgEntry(msg.Version);
+                    var attributes = new List<object>();
+                    var langs = new List<string>();
 
-                foreach (var attr in jEntry["attributes"])
-                {
-                    entry.Attributes.Add(ReadAttributeFromStr(attr.First.ToString(), (int)msg.AttributeHeaders[entry.Attributes.Count]["valueType"]));
+                    if (jEntry["attributes"] != null)
+                    {
+                        foreach (var attr in jEntry["attributes"])
+                        {
+                            attributes.Add(ReadAttributeFromStr(attr.First.ToString(), (int)msg.AttributeHeaders[entry.Attributes.Count]["valueType"]));
+                        }
+                    }
+
+                    if (jEntry["content"] != null)
+                    {
+                        foreach (var content in jEntry["content"])
+                        {
+                            langs.Add(Helper.ForceWindowsLineBreak(content.ToString()));
+                        }
+                    }
+
+                    entry.BuildEntry(
+                        jEntry["guid"]?.ToString(),
+                        (uint?)jEntry["crc?"] ?? 0,
+                        jEntry["name"]?.ToString(),
+                        attributes,
+                        langs,
+                        (MSG.IsVersionEntryByHash(msg.Version) ? (int)MMH3.Hash32(jEntry["name"]?.ToString(), -1) : 0),
+                        (MSG.IsVersionEntryByHash(msg.Version) ? 0 : (jEntry["index"]?.ToObject<int>() ?? 0))
+                    );
+
+                    msg.Entries.Add(entry);
                 }
-
-                foreach (var content in jEntry["content"])
-                {
-                    entry.Langs.Add(Helper.ForceWindowsLineBreak((string)content));
-                }
-
-                msg.Entries.Add(entry);
             }
 
             return msg;

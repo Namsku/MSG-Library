@@ -67,6 +67,7 @@ namespace MsgTool
 
         public void WriteHead(BinaryWriter writer)
         {
+            writer.Seek(0, SeekOrigin.End);
             writer.Write(GUID.ToByteArray());
             writer.Write(CRC);
 
@@ -126,25 +127,25 @@ namespace MsgTool
 
             for (int i = 0; i < attributeHeaders.Count; i++)
             {
-                var value = 0;
-                switch (attributeHeaders[i]["valueType"])
+                switch ((int)attributeHeaders[i]["valueType"])
                 {
-                    case -1:  // null wstring
-                        value = -1;
-                        writer.Write(value);
+                    case -1: // null wstring
+                        writer.Write((long)-1);
                         break;
-                    case 0:  // int64
+                    case 0: // int64
                         writer.Write((long)Attributes[i]);
                         break;
-                    case 1:  // double
-                        writer.Write(BitConverter.GetBytes((double)Attributes[i]));
+                    case 1: // double
+                        writer.Write((double)Attributes[i]);
                         break;
-                    case 2:  // wstring
-                        value = -1;
-                        writer.Write(value);
+                    case 2: // wstring
+                        writer.Write((long)-1);
                         break;
+                    default:
+                        throw new InvalidOperationException("Unsupported valueType.");
                 }
-                AttributesPH.Add((int)writer.BaseStream.Position);
+
+                AttributesPH.Add((int) writer.BaseStream.Length);
             }
         }
 
