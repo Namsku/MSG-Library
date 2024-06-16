@@ -9,7 +9,7 @@ namespace MsgTool
     public class MsgEntry
     {
         public Guid GUID { get; set; }
-        public int CRC { get; set; }
+        public uint CRC { get; set; }
         public int? Hash { get; set; }
         public int? Index { get; set; }
         public long EntryNameOffset { get; set; }
@@ -44,7 +44,7 @@ namespace MsgTool
         public void ReadHead(BinaryReader filestream, int langCount)
         {
             GUID = new Guid(filestream.ReadBytes(16));
-            CRC = filestream.ReadInt32();
+            CRC = (uint) filestream.ReadInt32();
 
             if (IsVersionEntryByHash(_version))
             {
@@ -159,7 +159,7 @@ namespace MsgTool
             Langs = langs;
         }
 
-        public void BuildEntry(string guid, int crc, string name, List<object> attributeValues, List<string> langs, int hash = 0, int index = 0)
+        public void BuildEntry(string guid, uint crc, string name, List<object> attributeValues, List<string> langs, int hash = 0, int index = 0)
         {
             GUID = new Guid(guid);
             CRC = crc;

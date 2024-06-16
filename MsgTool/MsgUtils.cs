@@ -175,7 +175,7 @@ namespace MsgTool
                 var entry = new MsgEntry
                 {
                     GUID = (Guid)jEntry["guid"],
-                    CRC = (int)jEntry["crc?"],
+                    CRC = (uint)jEntry["crc?"],
                     Name = (string)jEntry["name"],
                     Attributes = new List<object>(),
                     Langs = new List<string>(),
