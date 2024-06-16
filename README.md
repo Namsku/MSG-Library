@@ -1,6 +1,6 @@
 # MSG Library
 
-This project is a partial port of the [REMSG_Converter](https://github.com/dtlnor/REMSG_Converter), a Python library designed for converting RE engine message text files into JSON, CSV, or plain text formats and vice versa.
+This project is a partial port of the [REMSG_Converter](https://github.com/dtlnor/REMSG_Converter) in C#, the original project is a Python library designed for converting RE engine message text files into JSON, CSV, or plain text formats and vice versa.
 
 ## Features
 
