@@ -164,6 +164,7 @@
             Langs = langs;
         }
 
+        public override string ToString() => Name;
     }
 
 }

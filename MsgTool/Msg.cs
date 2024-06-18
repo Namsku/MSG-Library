@@ -1,4 +1,7 @@
 ﻿using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MsgTool
 {
@@ -6,10 +9,10 @@ namespace MsgTool
     {
         private StringPool _stringPool;
 
-        public List<MsgEntry> Entries { get; set; }
-        public List<AttributeHeader> AttributeHeaders { get; set; }
-        public int Version { get; set; }
-        public List<int> Languages { get; set; }
+        public List<MsgEntry> Entries { get; set; } = new List<MsgEntry>();
+        public List<AttributeHeader> AttributeHeaders { get; set; } = new List<AttributeHeader>();
+        public int Version { get; set; } = 14;
+        public List<int> Languages { get; set; } = new List<int>();
 
         public MSG() { }
 
@@ -407,5 +410,88 @@ namespace MsgTool
         {
             return version > 15 && version != 0x2022033D;
         }
+
+        public static MSG FromBytes(byte[] data)
+        {
+            var msg = new MSG();
+            msg.ReadMSG(new MemoryStream(data));
+            return msg;
+        }
+
+        public static MSG FromJson(string json)
+        {
+            var j = JsonSerializer.Deserialize<MsgJson>(json, g_jsonSerializerOptions)!;
+            var msg = new MSG();
+            msg.Version = j.Version ?? 14;
+            if (j.AttributeHeaders != null)
+            {
+                foreach (var ah in j.AttributeHeaders)
+                {
+                    msg.AttributeHeaders.Add(new AttributeHeader(ah.Name!, ah.ValueType!.Value));
+                }
+            }
+            if (j.Entries != null)
+            {
+                var index = 0;
+                foreach (var e in j.Entries)
+                {
+                    msg.Entries.Add(new MsgEntry()
+                    {
+                        Name = e.Name ?? "",
+                        GUID = e.Guid ?? default,
+                        CRC = e.Crc ?? 0,
+                        Hash = e.Hash,
+                        Index = index,
+                        Attributes = e.Attributes?.ToList() ?? [],
+                        Langs = e.Content?.ToList() ?? []
+                    });
+                    index++;
+                }
+            }
+
+            // Determine what languages are available
+            if (msg.Entries.Count != 0)
+            {
+                msg.Languages = Enumerable.Range(0, msg.Entries[0].Langs.Count).ToList();
+            }
+            else if (Constants.VERSION_2_LANG_COUNT.TryGetValue(msg.Version, out var count))
+            {
+                msg.Languages = Enumerable.Range(0, count).ToList();
+            }
+
+            return msg;
+        }
+
+        public string ToJson()
+        {
+            var j = new MsgJson();
+            j.Version = Version;
+            j.AttributeHeaders = AttributeHeaders
+                .Select(x => new AttributeHeaderJson()
+                {
+                    Name = x.Name,
+                    ValueType = x.ValueType
+                }).ToArray();
+            j.Entries = Entries
+                .Select(x => new MsgEntryJson()
+                {
+                    Name = x.Name,
+                    Guid = x.GUID,
+                    Crc = x.CRC,
+                    Hash = x.Hash,
+                    Attributes = x.Attributes.ToArray(),
+                    Content = x.Langs.ToArray()
+                })
+                .ToArray();
+            return JsonSerializer.Serialize(j, g_jsonSerializerOptions);
+        }
+
+        private static JsonSerializerOptions g_jsonSerializerOptions = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
     }
 }
