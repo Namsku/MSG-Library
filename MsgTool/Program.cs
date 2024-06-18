@@ -4,7 +4,7 @@ namespace Project
 {
     public class Program
     {
-        public static void CompareMsgFiles(MSG msg1, MSG msg2)
+        public static void CompareMsgFiles(Msg msg1, Msg msg2)
         {
             if (msg1.Version != msg2.Version)
             {
@@ -45,9 +45,9 @@ namespace Project
             {
                 Console.WriteLine($"Entries[{index}] Name mismatch: {entry1.Name} vs {entry2.Name}");
             }
-            if (entry1.GUID != entry2.GUID)
+            if (entry1.Guid != entry2.Guid)
             {
-                Console.WriteLine($"Entries[{index}] Guid mismatch: {entry1.GUID} vs {entry2.GUID}");
+                Console.WriteLine($"Entries[{index}] Guid mismatch: {entry1.Guid} vs {entry2.Guid}");
             }
             if (entry1.CRC != entry2.CRC)
             {
@@ -89,30 +89,6 @@ namespace Project
 
         public static void Main(string[] args)
         {
-            string filePath = "mes_sys_mainmenu.msg.14.bak";
-
-            // Create an instance of MSG
-            MSG msg = new MSG();
-
-            // Open the file stream
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            {
-                // Read the MSG data from the file stream
-                msg.ReadMSG(fs);
-            }
-
-            // MsgUtils.ExportJson(msg, "output.json");
-            var msg2 = MsgUtils.ImportJson(null, "output.json");
-
-            //CompareMsgFiles(msg, msg2);
-            File.WriteAllBytes("mes_sys_mainmenu.msg.14", msg2.WriteMSG());
-
-            // Use the parsed data
-            Console.WriteLine($"Version: {msg.Version}");
-            Console.WriteLine($"Entries Count: {msg.Entries.Count}");
-            Console.WriteLine($"Attribute Headers Count: {msg.AttributeHeaders.Count}");
-            Console.WriteLine($"Languages Count: {msg.Languages.Count}");
-
         }
     }
 }

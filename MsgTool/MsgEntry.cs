@@ -2,7 +2,7 @@
 {
     public class MsgEntry
     {
-        public Guid GUID { get; set; }
+        public Guid Guid { get; set; }
         public uint CRC { get; set; }
         public int? Hash { get; set; }
         public int? Index { get; set; }
@@ -37,7 +37,7 @@
         public MsgEntry() { }
         public void ReadHead(BinaryReader filestream, int langCount)
         {
-            GUID = new Guid(filestream.ReadBytes(16));
+            Guid = new Guid(filestream.ReadBytes(16));
             CRC = (uint)filestream.ReadInt32();
 
             if (IsVersionEntryByHash(_version))
@@ -62,7 +62,7 @@
         public void WriteHead(BinaryWriter writer)
         {
             writer.Seek(0, SeekOrigin.End);
-            writer.Write(GUID.ToByteArray());
+            writer.Write(Guid.ToByteArray());
             writer.Write(CRC);
 
             if (IsVersionEntryByHash(_version))
@@ -147,7 +147,7 @@
 
         public void BuildEntry(string guid, uint crc, string name, List<object> attributeValues, List<string> langs, int hash = 0, int index = 0)
         {
-            GUID = new Guid(guid);
+            Guid = new Guid(guid);
             CRC = crc;
 
             if (IsVersionEntryByHash(_version))

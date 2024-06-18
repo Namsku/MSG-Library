@@ -5,18 +5,23 @@ using System.Text.Json.Serialization;
 
 namespace MsgTool
 {
-    public class MSG
+    public sealed class Msg
     {
-        private StringPool _stringPool;
+        public ReadOnlyMemory<byte> Data { get; }
 
+        private StringPool _stringPool;
         public List<MsgEntry> Entries { get; set; } = new List<MsgEntry>();
         public List<AttributeHeader> AttributeHeaders { get; set; } = new List<AttributeHeader>();
         public int Version { get; set; } = 14;
         public List<int> Languages { get; set; } = new List<int>();
 
-        public MSG() { }
+        public Msg(ReadOnlyMemory<byte> data)
+        {
+            Data = data;
+            ReadMSG(new MemoryStream(data.ToArray()));
+        }
 
-        public void ReadMSG(Stream filestream)
+        private void ReadMSG(Stream filestream)
         {
             using (var reader = new BinaryReader(filestream, Encoding.UTF8, true))
             {
@@ -180,12 +185,179 @@ namespace MsgTool
             }
         }
 
-        public byte[] WriteMSG()
+        private void PadAlignUp(BinaryReader reader, int alignment)
         {
-            // Initialize memory stream and binary writer
-            using (var memoryStream = new MemoryStream())
-            using (var writer = new BinaryWriter(memoryStream, Encoding.UTF8))
+            long pos = reader.BaseStream.Position;
+            if (pos % alignment != 0)
             {
+                reader.BaseStream.Seek(alignment - (pos % alignment), SeekOrigin.Current);
+            }
+        }
+
+        private static bool IsVersionEncrypt(int version)
+        {
+            return version > 12 && version != 0x2022033D;
+        }
+
+        public static bool IsVersionEntryByHash(int version)
+        {
+            return version > 15 && version != 0x2022033D;
+        }
+
+        public int Count => Entries.Count;
+
+        public string? GetString(string name, LanguageId language)
+        {
+            var entry = Entries.FirstOrDefault(x => x.Name == name);
+            return entry != null
+                ? GetString(entry, language)
+                : null;
+        }
+
+        public string? GetString(Guid guid, LanguageId language)
+        {
+            var entry = Entries.FirstOrDefault(x => x.Guid == guid);
+            return entry != null
+                ? GetString(entry, language)
+                : null;
+        }
+
+        private static string? GetString(MsgEntry entry, LanguageId language)
+        {
+            var languageIndex = (int)language;
+            return entry.Langs.Count > languageIndex
+                ? entry.Langs[languageIndex]
+                : null;
+        }
+
+        public static Msg FromJson(string json)
+        {
+            var j = JsonSerializer.Deserialize<MsgJson>(json, g_jsonSerializerOptions)!;
+            var builder = new Builder();
+            builder.Version = j.Version ?? 14;
+            if (j.AttributeHeaders != null)
+            {
+                foreach (var ah in j.AttributeHeaders)
+                {
+                    builder.AttributeHeaders.Add(new AttributeHeader(ah.Name!, ah.ValueType!.Value));
+                }
+            }
+            if (j.Entries != null)
+            {
+                var index = 0;
+                foreach (var e in j.Entries)
+                {
+                    builder.Entries.Add(new MsgEntry()
+                    {
+                        Name = e.Name ?? "",
+                        Guid = e.Guid ?? default,
+                        CRC = e.Crc ?? 0,
+                        Hash = e.Hash,
+                        Index = index,
+                        Attributes = e.Attributes?.ToList() ?? [],
+                        Langs = e.Content?.ToList() ?? []
+                    });
+                    index++;
+                }
+            }
+
+            // Determine what languages are available
+            if (builder.Entries.Count != 0)
+            {
+                builder.Languages = Enumerable.Range(0, builder.Entries[0].Langs.Count).ToList();
+            }
+            else if (Constants.VERSION_2_LANG_COUNT.TryGetValue(builder.Version, out var count))
+            {
+                builder.Languages = Enumerable.Range(0, count).ToList();
+            }
+
+            return builder.ToMsg();
+        }
+
+        public string ToJson()
+        {
+            var j = new MsgJson();
+            j.Version = Version;
+            j.AttributeHeaders = AttributeHeaders
+                .Select(x => new AttributeHeaderJson()
+                {
+                    Name = x.Name,
+                    ValueType = x.ValueType
+                }).ToArray();
+            j.Entries = Entries
+                .Select(x => new MsgEntryJson()
+                {
+                    Name = x.Name,
+                    Guid = x.Guid,
+                    Crc = x.CRC,
+                    Hash = x.Hash,
+                    Attributes = x.Attributes.ToArray(),
+                    Content = x.Langs.ToArray()
+                })
+                .ToArray();
+            return JsonSerializer.Serialize(j, g_jsonSerializerOptions);
+        }
+
+        private static JsonSerializerOptions g_jsonSerializerOptions = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
+        public Builder ToBuilder()
+        {
+            var builder = new Builder();
+            builder.Version = Version;
+            builder.Languages = Languages;
+            builder.AttributeHeaders = AttributeHeaders;
+            builder.Entries = Entries;
+            return builder;
+        }
+
+        public class Builder
+        {
+            public int Version { get; set; } = 14;
+            public List<int> Languages { get; set; } = new List<int>();
+            public List<MsgEntry> Entries { get; set; } = new List<MsgEntry>();
+            public List<AttributeHeader> AttributeHeaders { get; set; } = new List<AttributeHeader>();
+
+            public void SetString(string name, LanguageId language, string value)
+            {
+                var entry = Entries.First(x => x.Name == name);
+                entry.Langs[(int)language] = value;
+            }
+
+            public void SetString(Guid guid, LanguageId language, string value)
+            {
+                var entry = Entries.First(x => x.Guid == guid);
+                entry.Langs[(int)language] = value;
+            }
+
+            public void SetStringAll(string name, string value)
+            {
+                var entry = Entries.First(x => x.Name == name);
+                for (var i = 0; i < entry.Langs.Count; i++)
+                {
+                    entry.Langs[i] = value;
+                }
+            }
+
+            public void SetStringAll(Guid guid, string value)
+            {
+                var entry = Entries.First(x => x.Guid == guid);
+                for (var i = 0; i < entry.Langs.Count; i++)
+                {
+                    entry.Langs[i] = value;
+                }
+            }
+
+            public Msg ToMsg()
+            {
+                using var memoryStream = new MemoryStream();
+                using var writer = new BinaryWriter(memoryStream, Encoding.UTF8);
+
                 // Header
                 writer.Write((uint)Version);
                 writer.Write(Encoding.ASCII.GetBytes("GMSG"));
@@ -387,111 +559,8 @@ namespace MsgTool
                     }
                 }
 
-                return memoryStream.ToArray();
+                return new Msg(memoryStream.ToArray());
             }
         }
-
-
-        private void PadAlignUp(BinaryReader reader, int alignment)
-        {
-            long pos = reader.BaseStream.Position;
-            if (pos % alignment != 0)
-            {
-                reader.BaseStream.Seek(alignment - (pos % alignment), SeekOrigin.Current);
-            }
-        }
-
-        public static bool IsVersionEncrypt(int version)
-        {
-            return version > 12 && version != 0x2022033D;
-        }
-
-        public static bool IsVersionEntryByHash(int version)
-        {
-            return version > 15 && version != 0x2022033D;
-        }
-
-        public static MSG FromBytes(byte[] data)
-        {
-            var msg = new MSG();
-            msg.ReadMSG(new MemoryStream(data));
-            return msg;
-        }
-
-        public static MSG FromJson(string json)
-        {
-            var j = JsonSerializer.Deserialize<MsgJson>(json, g_jsonSerializerOptions)!;
-            var msg = new MSG();
-            msg.Version = j.Version ?? 14;
-            if (j.AttributeHeaders != null)
-            {
-                foreach (var ah in j.AttributeHeaders)
-                {
-                    msg.AttributeHeaders.Add(new AttributeHeader(ah.Name!, ah.ValueType!.Value));
-                }
-            }
-            if (j.Entries != null)
-            {
-                var index = 0;
-                foreach (var e in j.Entries)
-                {
-                    msg.Entries.Add(new MsgEntry()
-                    {
-                        Name = e.Name ?? "",
-                        GUID = e.Guid ?? default,
-                        CRC = e.Crc ?? 0,
-                        Hash = e.Hash,
-                        Index = index,
-                        Attributes = e.Attributes?.ToList() ?? [],
-                        Langs = e.Content?.ToList() ?? []
-                    });
-                    index++;
-                }
-            }
-
-            // Determine what languages are available
-            if (msg.Entries.Count != 0)
-            {
-                msg.Languages = Enumerable.Range(0, msg.Entries[0].Langs.Count).ToList();
-            }
-            else if (Constants.VERSION_2_LANG_COUNT.TryGetValue(msg.Version, out var count))
-            {
-                msg.Languages = Enumerable.Range(0, count).ToList();
-            }
-
-            return msg;
-        }
-
-        public string ToJson()
-        {
-            var j = new MsgJson();
-            j.Version = Version;
-            j.AttributeHeaders = AttributeHeaders
-                .Select(x => new AttributeHeaderJson()
-                {
-                    Name = x.Name,
-                    ValueType = x.ValueType
-                }).ToArray();
-            j.Entries = Entries
-                .Select(x => new MsgEntryJson()
-                {
-                    Name = x.Name,
-                    Guid = x.GUID,
-                    Crc = x.CRC,
-                    Hash = x.Hash,
-                    Attributes = x.Attributes.ToArray(),
-                    Content = x.Langs.ToArray()
-                })
-                .ToArray();
-            return JsonSerializer.Serialize(j, g_jsonSerializerOptions);
-        }
-
-        private static JsonSerializerOptions g_jsonSerializerOptions = new JsonSerializerOptions()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-            WriteIndented = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        };
     }
 }
