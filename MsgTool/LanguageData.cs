@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MsgTool
+﻿namespace MsgTool
 {
-    public static class Constants
+    internal static class LanguageData
     {
         public static readonly Dictionary<int, string> LANG_LIST = new Dictionary<int, string>
         {

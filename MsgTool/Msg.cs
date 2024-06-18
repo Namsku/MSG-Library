@@ -66,7 +66,7 @@ namespace MsgTool
                 {
                     Languages.Add(reader.ReadInt32());
                 }
-                if (!Languages.All(lang => Constants.LANG_LIST.ContainsKey(lang) && Languages.IndexOf(lang) == lang))
+                if (!Languages.All(lang => LanguageData.LANG_LIST.ContainsKey(lang) && Languages.IndexOf(lang) == lang))
                 {
                     Console.WriteLine($"unkn lang found. {string.Join(", ", Languages)}. Please update LANG_LIST from via.Language");
                 }
@@ -266,7 +266,7 @@ namespace MsgTool
             {
                 builder.Languages = Enumerable.Range(0, builder.Entries[0].Langs.Count).ToList();
             }
-            else if (Constants.VERSION_2_LANG_COUNT.TryGetValue(builder.Version, out var count))
+            else if (LanguageData.VERSION_2_LANG_COUNT.TryGetValue(builder.Version, out var count))
             {
                 builder.Languages = Enumerable.Range(0, count).ToList();
             }
