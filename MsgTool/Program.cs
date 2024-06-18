@@ -19,12 +19,9 @@ namespace Project
             {
                 for (int i = 0; i < msg1.AttributeHeaders.Count; i++)
                 {
-                    foreach (var key in msg1.AttributeHeaders[i].Keys)
+                    if (msg1.AttributeHeaders[i] != msg2.AttributeHeaders[i])
                     {
-                        if (!msg2.AttributeHeaders[i].ContainsKey(key) || msg1.AttributeHeaders[i][key] != msg2.AttributeHeaders[i][key])
-                        {
-                            Console.WriteLine($"AttributeHeaders[{i}] mismatch on key '{key}': {msg1.AttributeHeaders[i][key]} vs {msg2.AttributeHeaders[i][key]}");
-                        }
+                        Console.WriteLine($"AttributeHeaders[{i}] mismatch");
                     }
                 }
             }

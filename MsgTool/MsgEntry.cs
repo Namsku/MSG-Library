@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MsgTool
+﻿namespace MsgTool
 {
     public class MsgEntry
     {
@@ -44,7 +38,7 @@ namespace MsgTool
         public void ReadHead(BinaryReader filestream, int langCount)
         {
             GUID = new Guid(filestream.ReadBytes(16));
-            CRC = (uint) filestream.ReadInt32();
+            CRC = (uint)filestream.ReadInt32();
 
             if (IsVersionEntryByHash(_version))
             {
@@ -77,7 +71,7 @@ namespace MsgTool
             }
             else
             {
-                writer.Write(Hash ?? 0);
+                writer.Write(Index ?? 0);
             }
 
             EntryNameOffsetPH = (int)writer.BaseStream.Position;
@@ -94,58 +88,49 @@ namespace MsgTool
             }
         }
 
-        public void ReadAttributes(BinaryReader filestream, List<Dictionary<string, object>> attributeHeaders)
+        public void ReadAttributes(BinaryReader filestream, List<AttributeHeader> attributeHeaders)
         {
-            this.Attributes = new List<object>();
+            Attributes = new List<object>();
             foreach (var header in attributeHeaders)
             {
                 long value = 0;
-                switch (header["valueType"])
+                value = header.ValueType switch
                 {
-                    case -1:  // null wstring
-                        value = filestream.ReadInt64();
-                        break;
-                    case 0:  // int64
-                        value = filestream.ReadInt64();
-                        break;
-                    case 1:  // double
-                        value = BitConverter.ToInt64(filestream.ReadBytes(8), 0);
-                        break;
-                    case 2:  // wstring
-                        value = filestream.ReadInt64();
-                        break;
-                    default:
-                        throw new NotImplementedException($"{value} not implemented");
-                }
+                    AttributeKinds.Null => filestream.ReadInt64(),
+                    AttributeKinds.Int64 => filestream.ReadInt64(),
+                    AttributeKinds.Double => BitConverter.ToInt64(filestream.ReadBytes(8), 0),
+                    AttributeKinds.Wstring => filestream.ReadInt64(),
+                    _ => throw new NotImplementedException($"{value} not implemented"),
+                };
                 Attributes.Add(value);
             }
         }
 
-        public void WriteAttributes(BinaryWriter writer, List<Dictionary<string, object>> attributeHeaders)
+        public void WriteAttributes(BinaryWriter writer, List<AttributeHeader> attributeHeaders)
         {
             AttributesPH = new List<int>();
 
             for (int i = 0; i < attributeHeaders.Count; i++)
             {
-                switch ((int)attributeHeaders[i]["valueType"])
+                switch (attributeHeaders[i].ValueType)
                 {
-                    case -1: // null wstring
+                    case AttributeKinds.Null:
                         writer.Write((long)-1);
                         break;
-                    case 0: // int64
+                    case AttributeKinds.Int64:
                         writer.Write((long)Attributes[i]);
                         break;
-                    case 1: // double
+                    case AttributeKinds.Double:
                         writer.Write((double)Attributes[i]);
                         break;
-                    case 2: // wstring
+                    case AttributeKinds.Wstring:
                         writer.Write((long)-1);
                         break;
                     default:
                         throw new InvalidOperationException("Unsupported valueType.");
                 }
 
-                AttributesPH.Add((int) writer.BaseStream.Length);
+                AttributesPH.Add((int)writer.BaseStream.Length);
             }
         }
 

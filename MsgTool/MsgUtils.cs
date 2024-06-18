@@ -15,8 +15,8 @@ namespace MsgTool
             { "version", msg.Version },
             { "attribute_headers", msg.AttributeHeaders.Select(attr => new Dictionary<string, object>
                 {
-                    { "ty", attr["valueType"] },
-                    { "name", attr["name"] }
+                    { "ty", attr.ValueType },
+                    { "name", attr.Name! }
                 }).ToList() },
             { "entries", msg.Entries.Select(entry => new Dictionary<string, object>
                 {
@@ -26,7 +26,7 @@ namespace MsgTool
                     { "hash", MSG.IsVersionEntryByHash(msg.Version) ? entry.Hash : 0xFFFFFFFF },
                     { "attributes", msg.AttributeHeaders.Select((attrh, i) => new Dictionary<string, object>
                         {
-                            { ValueTypeEnum((int) attrh["valueType"]), entry.Attributes[i] }
+                            { ValueTypeEnum(attrh.ValueType), entry.Attributes[i] }
                         }).ToList() },
                     { "content", msg.Languages.Select(lang => entry.Langs[lang]).ToList() }
                 }).ToList()
@@ -143,7 +143,7 @@ namespace MsgTool
             {
                 Version = (int)mhriceJson["version"],
                 Languages = new List<int>(),
-                AttributeHeaders = new List<Dictionary<string, object>>(),
+                AttributeHeaders = new List<AttributeHeader>(),
                 Entries = new List<MsgEntry>()
             };
 
@@ -170,11 +170,7 @@ namespace MsgTool
             {
                 foreach (var head in mhriceJson["attribute_headers"])
                 {
-                    msg.AttributeHeaders.Add(new Dictionary<string, object>
-            {
-                { "valueType", (int)head["ty"] },
-                { "name", (string)head["name"] }
-            });
+                    msg.AttributeHeaders.Add(new AttributeHeader((string)head["name"], (int)head["ty"]));
                 }
             }
 
@@ -191,7 +187,7 @@ namespace MsgTool
                     {
                         foreach (var attr in jEntry["attributes"])
                         {
-                            attributes.Add(ReadAttributeFromStr(attr.First.ToString(), (int)msg.AttributeHeaders[entry.Attributes.Count]["valueType"]));
+                            attributes.Add(ReadAttributeFromStr(attr.First.ToString(), msg.AttributeHeaders[entry.Attributes.Count].ValueType));
                         }
                     }
 
