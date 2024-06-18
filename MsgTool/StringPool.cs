@@ -4,6 +4,8 @@ namespace MsgTool
 {
     public sealed class StringPool
     {
+        private static readonly byte[] g_key = [0xCF, 0xCE, 0xFB, 0xF8, 0xEC, 0x0A, 0x33, 0x66, 0x93, 0xA9, 0x1D, 0x93, 0x50, 0x39, 0x5F, 0x09];
+
         private byte[]? _encrypted;
         private readonly byte[] _unencrypted;
         private readonly Dictionary<int, string> _pool;
@@ -14,7 +16,7 @@ namespace MsgTool
             if (encrypted)
             {
                 _encrypted = data;
-                _unencrypted = Helper.Decrypt(data);
+                _unencrypted = Decrypt(data);
             }
             else
             {
@@ -35,7 +37,7 @@ namespace MsgTool
         {
             get
             {
-                _encrypted ??= Helper.Encrypt(_unencrypted);
+                _encrypted ??= Encrypt(_unencrypted);
                 return _encrypted;
             }
         }
@@ -57,11 +59,10 @@ namespace MsgTool
             if (wcharPool.Length == 0)
                 return new Dictionary<int, string>();
 
-            string stringPool = WcharPoolToStrPool(wcharPool);
-
+            var stringPool = WcharPoolToStrPool(wcharPool);
             var stringDict = new Dictionary<int, string>();
-            int startPointer = 0;
-            for (int i = 0; i < stringPool.Length; i++)
+            var startPointer = 0;
+            for (var i = 0; i < stringPool.Length; i++)
             {
                 if (stringPool[i] == '\x00')
                 {
@@ -76,7 +77,7 @@ namespace MsgTool
         {
             if (wcharPool.Length % 2 != 0)
                 throw new ArgumentException("Wchar pool should have even size");
-            string stringPool = Encoding.Unicode.GetString(wcharPool);
+            var stringPool = Encoding.Unicode.GetString(wcharPool);
             if (stringPool[^1] != '\x00')
                 throw new ArgumentException("Ending wchar not null");
             return stringPool;
@@ -108,6 +109,34 @@ namespace MsgTool
         private static byte[] ToWcharBytes(string input)
         {
             return Encoding.Unicode.GetBytes(input + '\x00');
+        }
+
+        private static byte[] Decrypt(byte[] rawBytes)
+        {
+            var rawData = new byte[rawBytes.Length];
+            Array.Copy(rawBytes, rawData, rawBytes.Length);
+            byte prev = 0;
+            for (int i = 0; i < rawData.Length; i++)
+            {
+                var cur = rawData[i];
+                rawData[i] = (byte)(cur ^ prev ^ g_key[i & 0xF]);
+                prev = cur;
+            }
+            return rawData;
+        }
+
+        private static byte[] Encrypt(byte[] rawBytes)
+        {
+            var rawData = new byte[rawBytes.Length];
+            Array.Copy(rawBytes, rawData, rawBytes.Length);
+            byte prev = 0;
+            for (int i = 0; i < rawData.Length; i++)
+            {
+                var cur = rawData[i];
+                rawData[i] = (byte)(cur ^ prev ^ g_key[i & 0xF]);
+                prev = rawData[i];
+            }
+            return rawData;
         }
     }
 }

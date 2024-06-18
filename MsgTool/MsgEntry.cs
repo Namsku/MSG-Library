@@ -8,14 +8,14 @@
         public int? Index { get; set; }
         public long EntryNameOffset { get; set; }
         public long AttributeOffset { get; set; }
-        public List<long> ContentOffsetsByLangs { get; set; }
-        public List<object> Attributes { get; set; }
-        public List<int> AttributesPH { get; set; }
-        public string Name { get; set; }
-        public List<string> Langs { get; set; }
+        public List<long> ContentOffsetsByLangs { get; set; } = new List<long>();
+        public List<object> Attributes { get; set; } = new List<object>();
+        public List<int> AttributesPH { get; set; } = new List<int>();
+        public string Name { get; set; } = "";
+        public List<string> Langs { get; set; } = new List<string>();
         public int AttributeOffsetPH { get; set; }
         public int EntryNameOffsetPH { get; set; }
-        public List<int> ContentOffsetsByLangsPH { get; set; }
+        public List<int> ContentOffsetsByLangsPH { get; set; } = new List<int>();
 
         private int _version;
 
@@ -35,6 +35,7 @@
         }
 
         public MsgEntry() { }
+
         public void ReadHead(BinaryReader filestream, int langCount)
         {
             Guid = new Guid(filestream.ReadBytes(16));

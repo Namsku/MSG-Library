@@ -9,7 +9,6 @@ namespace MsgTool
     {
         public ReadOnlyMemory<byte> Data { get; }
 
-        private StringPool _stringPool;
         public List<MsgEntry> Entries { get; set; } = new List<MsgEntry>();
         public List<AttributeHeader> AttributeHeaders { get; set; } = new List<AttributeHeader>();
         public int Version { get; set; } = 14;
@@ -130,12 +129,12 @@ namespace MsgTool
                 if (dataSize % 2 != 0)
                     throw new InvalidDataException($"wstring pool size should be even: {dataSize}");
                 reader.BaseStream.Seek((long)dataOffset, SeekOrigin.Begin);
-                _stringPool = new StringPool(reader.ReadBytes((int)dataSize), encrypted: IsVersionEncrypt(Version));
+                var stringPool = new StringPool(reader.ReadBytes((int)dataSize), encrypted: IsVersionEncrypt(Version));
 
                 // Read attribute names
                 for (int i = 0; i < attributeCount; i++)
                 {
-                    var name = _stringPool.Find(attributeNamesOffsets[i] - dataOffset);
+                    var name = stringPool.Find(attributeNamesOffsets[i] - dataOffset);
                     AttributeHeaders[i] = AttributeHeaders[i].WithName(name);
                 }
 
@@ -143,7 +142,7 @@ namespace MsgTool
                 for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
                 {
                     var entry = Entries[entryIndex];
-                    var name = _stringPool.Find(entry.EntryNameOffset - (long)dataOffset);
+                    var name = stringPool.Find(entry.EntryNameOffset - (long)dataOffset);
                     entry.SetName(name);
                     if (IsVersionEntryByHash(Version))
                     {
@@ -161,7 +160,7 @@ namespace MsgTool
                     var langContents = new List<string>();
                     foreach (var strOffset in entry.ContentOffsetsByLangs)
                     {
-                        langContents.Add(_stringPool.Find(strOffset - (long)dataOffset));
+                        langContents.Add(stringPool.Find(strOffset - (long)dataOffset));
                     }
                     entry.SetContent(langContents);
 
@@ -171,11 +170,11 @@ namespace MsgTool
                         var attrHead = AttributeHeaders[i];
                         if (attrHead.ValueType == AttributeKinds.Wstring)
                         {
-                            entry.Attributes[i] = _stringPool.Find((long)entry.Attributes[i] - (long)dataOffset);
+                            entry.Attributes[i] = stringPool.Find((long)entry.Attributes[i] - (long)dataOffset);
                         }
                         else if (attrHead.ValueType == AttributeKinds.Null)
                         {
-                            var temp = _stringPool.Find((long)entry.Attributes[i] - (long)dataOffset);
+                            var temp = stringPool.Find((long)entry.Attributes[i] - (long)dataOffset);
                             if (!string.IsNullOrEmpty(temp) && temp != "\x00")
                                 throw new InvalidDataException($"attr value type -1 contain non-null value {temp}");
                             entry.Attributes[i] = temp;
@@ -479,7 +478,6 @@ namespace MsgTool
                 var isStrAttrIdx = new List<int>();
                 var isNullAttrIdx = new List<int>();
 
-                var i = 0;
                 foreach (var attributeHeader in AttributeHeaders)
                 {
                     if (attributeHeader.ValueType == AttributeKinds.Null)
@@ -509,7 +507,7 @@ namespace MsgTool
 
                     foreach (var attributeIdx in isStrAttrIdx)
                     {
-                        stringPoolSet.Add(entry.Attributes[attributeIdx].ToString());
+                        stringPoolSet.Add(entry.Attributes[attributeIdx].ToString()!);
                     }
                 }
 
@@ -548,7 +546,7 @@ namespace MsgTool
                     {
                         offset = entry.AttributesPH[idx];
                         writer.Seek((int)offset, SeekOrigin.Begin);
-                        writer.Write((ulong)(stringPool.FindOffset(entry.Attributes[idx].ToString()) + dataOffset));
+                        writer.Write((ulong)(stringPool.FindOffset(entry.Attributes[idx].ToString()!) + dataOffset));
                     }
 
                     foreach (var idx in isNullAttrIdx)
