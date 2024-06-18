@@ -118,7 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="mes_sys_mainmenu_msg" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="ch_mes_main_wpcustom_msg_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>data\ch_mes_main_wpcustom.msg.22;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="mes_sys_mainmenu_msg_14" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>data\mes_sys_mainmenu.msg.14;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

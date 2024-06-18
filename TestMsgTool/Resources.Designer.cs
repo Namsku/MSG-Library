@@ -63,9 +63,19 @@ namespace TestMsgTool {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] mes_sys_mainmenu_msg {
+        internal static byte[] ch_mes_main_wpcustom_msg_22 {
             get {
-                object obj = ResourceManager.GetObject("mes_sys_mainmenu_msg", resourceCulture);
+                object obj = ResourceManager.GetObject("ch_mes_main_wpcustom_msg_22", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] mes_sys_mainmenu_msg_14 {
+            get {
+                object obj = ResourceManager.GetObject("mes_sys_mainmenu_msg_14", resourceCulture);
                 return ((byte[])(obj));
             }
         }

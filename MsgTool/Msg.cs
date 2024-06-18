@@ -146,7 +146,8 @@ namespace MsgTool
                     entry.SetName(name);
                     if (IsVersionEntryByHash(Version))
                     {
-                        uint nameHash = MMH3.Hash32(entry.Name, -1);
+                        // uint nameHash = MMH3.Hash32(entry.Name, -1);
+                        var nameHash = (int)PakHash.GetHash(entry.Name);
                         if (nameHash != entry.Hash)
                             throw new InvalidDataException($"Expected {entry.Hash} for {entry.Name} but got {nameHash}");
                     }
