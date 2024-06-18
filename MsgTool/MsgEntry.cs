@@ -93,13 +93,13 @@
             Attributes = new List<object>();
             foreach (var header in attributeHeaders)
             {
-                long value = 0;
+                object value = 0;
                 value = header.ValueType switch
                 {
-                    AttributeKinds.Null => filestream.ReadInt64(),
+                    AttributeKinds.Null => filestream.ReadUInt64(),
                     AttributeKinds.Int64 => filestream.ReadInt64(),
-                    AttributeKinds.Double => BitConverter.ToInt64(filestream.ReadBytes(8), 0),
-                    AttributeKinds.Wstring => filestream.ReadInt64(),
+                    AttributeKinds.Double => filestream.ReadDouble(),
+                    AttributeKinds.Wstring => (object)filestream.ReadUInt64(),
                     _ => throw new NotImplementedException($"{value} not implemented"),
                 };
                 Attributes.Add(value);
@@ -115,7 +115,7 @@
                 switch (attributeHeaders[i].ValueType)
                 {
                     case AttributeKinds.Null:
-                        writer.Write((long)-1);
+                        writer.Write(ulong.MaxValue);
                         break;
                     case AttributeKinds.Int64:
                         writer.Write((long)Attributes[i]);
@@ -124,7 +124,7 @@
                         writer.Write((double)Attributes[i]);
                         break;
                     case AttributeKinds.Wstring:
-                        writer.Write((long)-1);
+                        writer.Write(ulong.MaxValue);
                         break;
                     default:
                         throw new InvalidOperationException("Unsupported valueType.");
