@@ -323,6 +323,29 @@ namespace MsgTool
             public List<MsgEntry> Entries { get; set; } = new List<MsgEntry>();
             public List<AttributeHeader> AttributeHeaders { get; set; } = new List<AttributeHeader>();
 
+            public MsgEntry Create(string value) => Create(null, value);
+            public MsgEntry Create(string? name, string value)
+            {
+                LanguageData.VERSION_2_LANG_COUNT.TryGetValue(Version, out var langCount);
+                if (Entries.Count != 0)
+                {
+                    langCount = Entries[0].Langs.Count;
+                }
+
+                var guid = Guid.NewGuid();
+                name ??= guid.ToString();
+                var newEntry = new MsgEntry(Version)
+                {
+                    Guid = guid,
+                    CRC = 0,
+                    Hash = (int)PakHash.GetHash(name),
+                    Name = name,
+                    Langs = Enumerable.Range(0, langCount).Select(x => value).ToList()
+                };
+                Entries.Add(newEntry);
+                return newEntry;
+            }
+
             public MsgEntry Duplicate(Guid guid)
             {
                 var entry = Entries.First(x => x.Guid == guid);
