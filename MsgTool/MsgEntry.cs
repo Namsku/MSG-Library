@@ -2,6 +2,7 @@
 {
     public class MsgEntry
     {
+        public int Version { get; }
         public Guid Guid { get; set; }
         public uint CRC { get; set; }
         public int? Hash { get; set; }
@@ -17,8 +18,6 @@
         public int EntryNameOffsetPH { get; set; }
         public List<int> ContentOffsetsByLangsPH { get; set; } = new List<int>();
 
-        private int _version;
-
         public bool IsVersionEncrypt(int version)
         {
             return version > 12 && version != 0x2022033D;
@@ -31,7 +30,7 @@
 
         public MsgEntry(int version)
         {
-            _version = version;
+            Version = version;
         }
 
         public MsgEntry() { }
@@ -41,7 +40,7 @@
             Guid = new Guid(filestream.ReadBytes(16));
             CRC = (uint)filestream.ReadInt32();
 
-            if (IsVersionEntryByHash(_version))
+            if (IsVersionEntryByHash(Version))
             {
                 Hash = filestream.ReadInt32();
             }
@@ -66,7 +65,7 @@
             writer.Write(Guid.ToByteArray());
             writer.Write(CRC);
 
-            if (IsVersionEntryByHash(_version))
+            if (IsVersionEntryByHash(Version))
             {
                 writer.Write(Hash ?? 0);
             }
@@ -151,7 +150,7 @@
             Guid = new Guid(guid);
             CRC = crc;
 
-            if (IsVersionEntryByHash(_version))
+            if (IsVersionEntryByHash(Version))
             {
                 Hash = hash;
             }

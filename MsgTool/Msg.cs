@@ -323,6 +323,21 @@ namespace MsgTool
             public List<MsgEntry> Entries { get; set; } = new List<MsgEntry>();
             public List<AttributeHeader> AttributeHeaders { get; set; } = new List<AttributeHeader>();
 
+            public MsgEntry Duplicate(Guid guid)
+            {
+                var entry = Entries.First(x => x.Guid == guid);
+                var newEntry = new MsgEntry(entry.Version)
+                {
+                    Guid = Guid.NewGuid(),
+                    CRC = entry.CRC,
+                    Hash = entry.Hash,
+                    Name = entry.Name,
+                    Langs = entry.Langs.ToList()
+                };
+                Entries.Add(newEntry);
+                return newEntry;
+            }
+
             public void SetString(string name, LanguageId language, string value)
             {
                 var entry = Entries.First(x => x.Name == name);
@@ -419,7 +434,7 @@ namespace MsgTool
                     writer.Write(lang);
                 }
 
-                // writer.Write(new byte[8 - (memoryStream.Length % 8)]); // pad to 8 bytes
+                writer.Write(new byte[8 - (memoryStream.Length % 8)]); // pad to 8 bytes
 
                 // Write attribute headers
                 writer.Seek((int)attributeOffsetPH, SeekOrigin.Begin);
