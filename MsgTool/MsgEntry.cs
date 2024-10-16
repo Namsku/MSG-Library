@@ -96,10 +96,10 @@
                 object value = 0;
                 value = header.ValueType switch
                 {
-                    AttributeKinds.Null => filestream.ReadUInt64(),
+                    AttributeKinds.Null => filestream.ReadInt64(),
                     AttributeKinds.Int64 => filestream.ReadInt64(),
                     AttributeKinds.Double => filestream.ReadDouble(),
-                    AttributeKinds.Wstring => (object)filestream.ReadUInt64(),
+                    AttributeKinds.Wstring => (object)filestream.ReadInt64(),
                     _ => throw new NotImplementedException($"{value} not implemented"),
                 };
                 Attributes.Add(value);
