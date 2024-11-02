@@ -3,5 +3,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>RE Engine Message Library</Title>
+    <Authors>Namsku, IntelOrca</Authors>
+    <Copyright>Copyright (c) 2024 Namsku</Copyright>
+    <Description>View or edit .msg files from RE engine games.</Description>
+    <PackageTags>reengine,resident evil,message,msg</PackageTags>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 </Project>
