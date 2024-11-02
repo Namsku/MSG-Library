@@ -1,4 +1,4 @@
-﻿namespace MsgTool
+﻿namespace Namsku.BioRand.Messages
 {
     internal static class LanguageData
     {

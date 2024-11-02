@@ -1,6 +1,4 @@
-﻿using MsgTool;
-
-namespace TestMsgTool
+﻿namespace Namsku.BioRand.Messages.Tests
 {
     public class TestMsg
     {

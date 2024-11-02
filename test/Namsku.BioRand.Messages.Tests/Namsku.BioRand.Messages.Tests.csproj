@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MsgTool\MsgTool.csproj" />
+    <ProjectReference Include="..\..\src\Namsku.BioRand.Messages\Namsku.BioRand.Messages.csproj" />
   </ItemGroup>
 
   <ItemGroup>

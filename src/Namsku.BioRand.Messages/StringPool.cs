@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace MsgTool
+namespace Namsku.BioRand.Messages
 {
     public sealed class StringPool
     {

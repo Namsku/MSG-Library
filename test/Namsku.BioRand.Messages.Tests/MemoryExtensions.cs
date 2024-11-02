@@ -1,4 +1,4 @@
-﻿namespace TestMsgTool
+﻿namespace Namsku.BioRand.Messages.Tests
 {
     public static class MemoryExtensions
     {
