@@ -1,29 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MsgTool
+﻿namespace Namsku.BioRand.Messages
 {
     public class MsgEntry
     {
-        public Guid GUID { get; set; }
+        public int Version { get; }
+        public Guid Guid { get; set; }
         public uint CRC { get; set; }
         public int? Hash { get; set; }
         public int? Index { get; set; }
         public long EntryNameOffset { get; set; }
         public long AttributeOffset { get; set; }
-        public List<long> ContentOffsetsByLangs { get; set; }
-        public List<object> Attributes { get; set; }
-        public List<int> AttributesPH { get; set; }
-        public string Name { get; set; }
-        public List<string> Langs { get; set; }
+        public List<long> ContentOffsetsByLangs { get; set; } = new List<long>();
+        public List<object> Attributes { get; set; } = new List<object>();
+        public List<int> AttributesPH { get; set; } = new List<int>();
+        public string Name { get; set; } = "";
+        public List<string> Langs { get; set; } = new List<string>();
         public int AttributeOffsetPH { get; set; }
         public int EntryNameOffsetPH { get; set; }
-        public List<int> ContentOffsetsByLangsPH { get; set; }
-
-        private int _version;
+        public List<int> ContentOffsetsByLangsPH { get; set; } = new List<int>();
 
         public bool IsVersionEncrypt(int version)
         {
@@ -37,16 +30,17 @@ namespace MsgTool
 
         public MsgEntry(int version)
         {
-            _version = version;
+            Version = version;
         }
 
         public MsgEntry() { }
+
         public void ReadHead(BinaryReader filestream, int langCount)
         {
-            GUID = new Guid(filestream.ReadBytes(16));
-            CRC = (uint) filestream.ReadInt32();
+            Guid = new Guid(filestream.ReadBytes(16));
+            CRC = (uint)filestream.ReadInt32();
 
-            if (IsVersionEntryByHash(_version))
+            if (IsVersionEntryByHash(Version))
             {
                 Hash = filestream.ReadInt32();
             }
@@ -68,16 +62,16 @@ namespace MsgTool
         public void WriteHead(BinaryWriter writer)
         {
             writer.Seek(0, SeekOrigin.End);
-            writer.Write(GUID.ToByteArray());
+            writer.Write(Guid.ToByteArray());
             writer.Write(CRC);
 
-            if (IsVersionEntryByHash(_version))
+            if (IsVersionEntryByHash(Version))
             {
                 writer.Write(Hash ?? 0);
             }
             else
             {
-                writer.Write(Hash ?? 0);
+                writer.Write(Index ?? 0);
             }
 
             EntryNameOffsetPH = (int)writer.BaseStream.Position;
@@ -94,58 +88,49 @@ namespace MsgTool
             }
         }
 
-        public void ReadAttributes(BinaryReader filestream, List<Dictionary<string, object>> attributeHeaders)
+        public void ReadAttributes(BinaryReader filestream, List<AttributeHeader> attributeHeaders)
         {
-            this.Attributes = new List<object>();
+            Attributes = new List<object>();
             foreach (var header in attributeHeaders)
             {
-                long value = 0;
-                switch (header["valueType"])
+                object value = 0;
+                value = header.ValueType switch
                 {
-                    case -1:  // null wstring
-                        value = filestream.ReadInt64();
-                        break;
-                    case 0:  // int64
-                        value = filestream.ReadInt64();
-                        break;
-                    case 1:  // double
-                        value = BitConverter.ToInt64(filestream.ReadBytes(8), 0);
-                        break;
-                    case 2:  // wstring
-                        value = filestream.ReadInt64();
-                        break;
-                    default:
-                        throw new NotImplementedException($"{value} not implemented");
-                }
+                    AttributeKinds.Null => filestream.ReadInt64(),
+                    AttributeKinds.Int64 => filestream.ReadInt64(),
+                    AttributeKinds.Double => filestream.ReadDouble(),
+                    AttributeKinds.Wstring => (object)filestream.ReadInt64(),
+                    _ => throw new NotImplementedException($"{value} not implemented"),
+                };
                 Attributes.Add(value);
             }
         }
 
-        public void WriteAttributes(BinaryWriter writer, List<Dictionary<string, object>> attributeHeaders)
+        public void WriteAttributes(BinaryWriter writer, List<AttributeHeader> attributeHeaders)
         {
             AttributesPH = new List<int>();
 
             for (int i = 0; i < attributeHeaders.Count; i++)
             {
-                switch ((int)attributeHeaders[i]["valueType"])
+                switch (attributeHeaders[i].ValueType)
                 {
-                    case -1: // null wstring
-                        writer.Write((long)-1);
+                    case AttributeKinds.Null:
+                        writer.Write(ulong.MaxValue);
                         break;
-                    case 0: // int64
+                    case AttributeKinds.Int64:
                         writer.Write((long)Attributes[i]);
                         break;
-                    case 1: // double
+                    case AttributeKinds.Double:
                         writer.Write((double)Attributes[i]);
                         break;
-                    case 2: // wstring
-                        writer.Write((long)-1);
+                    case AttributeKinds.Wstring:
+                        writer.Write(ulong.MaxValue);
                         break;
                     default:
                         throw new InvalidOperationException("Unsupported valueType.");
                 }
 
-                AttributesPH.Add((int) writer.BaseStream.Length);
+                AttributesPH.Add((int)writer.BaseStream.Length);
             }
         }
 
@@ -162,10 +147,10 @@ namespace MsgTool
 
         public void BuildEntry(string guid, uint crc, string name, List<object> attributeValues, List<string> langs, int hash = 0, int index = 0)
         {
-            GUID = new Guid(guid);
+            Guid = new Guid(guid);
             CRC = crc;
 
-            if (IsVersionEntryByHash(_version))
+            if (IsVersionEntryByHash(Version))
             {
                 Hash = hash;
             }
@@ -179,6 +164,7 @@ namespace MsgTool
             Langs = langs;
         }
 
+        public override string ToString() => Name;
     }
 
 }
