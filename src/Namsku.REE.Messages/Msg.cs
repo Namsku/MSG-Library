@@ -3,7 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Namsku.BioRand.Messages
+namespace Namsku.REE.Messages
 {
     public sealed class Msg
     {

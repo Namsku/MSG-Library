@@ -1,4 +1,4 @@
-﻿namespace Namsku.BioRand.Messages
+﻿namespace Namsku.REE.Messages
 {
     internal static class LanguageData
     {

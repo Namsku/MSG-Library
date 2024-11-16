@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Namsku.BioRand.Messages
+namespace Namsku.REE.Messages
 {
     public class MsgJson
     {
