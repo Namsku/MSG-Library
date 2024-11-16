@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Namsku.BioRand.Messages
+namespace Namsku.REE.Messages
 {
     public static class PakHash
     {

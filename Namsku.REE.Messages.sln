@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34525.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Namsku.BioRand.Messages", "src\Namsku.BioRand.Messages\Namsku.BioRand.Messages.csproj", "{933691A8-3B56-49D5-BCDD-4FA09877F9EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Namsku.REE.Messages", "src\Namsku.REE.Messages\Namsku.REE.Messages.csproj", "{933691A8-3B56-49D5-BCDD-4FA09877F9EE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Namsku.BioRand.Messages.Tests", "test\Namsku.BioRand.Messages.Tests\Namsku.BioRand.Messages.Tests.csproj", "{95227573-4E36-4429-8D05-76BD5EE8B02F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Namsku.REE.Messages.Tests", "test\Namsku.REE.Messages.Tests\Namsku.REE.Messages.Tests.csproj", "{95227573-4E36-4429-8D05-76BD5EE8B02F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2678B7E6-5094-46DF-8868-976CF617C7A4}"
 EndProject

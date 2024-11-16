@@ -1,4 +1,4 @@
-﻿namespace Namsku.BioRand.Messages.Tests
+﻿namespace Namsku.REE.Messages.Tests
 {
     internal static class MemoryAssert
     {
