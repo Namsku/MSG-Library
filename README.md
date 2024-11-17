@@ -4,7 +4,7 @@ This project is a partial port of the [REMSG_Converter](https://github.com/dtlno
 
 ## Features
 
-- Convert RE engine message files (.msg) to JSON.
+- Convert RE engine message files (.msg) to JSON (only).
 - Convert JSON to RE engine message files (.msg).
 
 ## Usage
